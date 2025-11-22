@@ -1,0 +1,47 @@
+name: ساخت اپ درویدساز
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: نام اپ
+        required: true
+        default: اپ من
+      url:
+        description: آدرس سایت (با https)
+        required: true
+        default: https://example.com
+      package:
+        description: پکیج نیم (com.example.app)
+        required: true
+        default: com.example.myapp
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          
+      - uses: android-actions/setup-android@v3
+      
+      - run: chmod +x ./gradlew
+      
+      - name: تغییر تنظیمات
+        run: |
+          sed -i "s/My WebView App/${{ inputs.name }}/g" app/src/main/res/values/strings.xml
+          sed -i "s|https://example.com|${{ inputs.url }}|g" app/src/main/res/values/strings.xml
+          find . -type f -exec sed -i "s/com.mustafaersoyer.webviewapp/${{ inputs.package }}/g" {} \;
+          
+      - name: ساخت APK
+        run: ./gradlew assembleRelease --quiet
+        
+      - name: آپلود APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: اپ-${{ inputs.name }}.apk
+          path: app/build/outputs/apk/release/app-release.apk
